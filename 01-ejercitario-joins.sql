@@ -167,8 +167,7 @@ encuentran en dicha situación se le aplica una tasa de interés del 0.5% por ca
 Se considera que una cuota está en mora cuando ya pasó la fecha de vencimiento y no existe
 aún pago alguno. Se pide mostrar los siguientes datos y ordenar de forma descendente por
 días de atraso.
- */
-
+*/
 SELECT VEN.NUMERO_FACTURA AS NRO_FACTURA, EMP.NOMBRE || ' ' || EMP.APELLIDO AS VENDEDOR, 
 PER.RUC, PER.NOMBRE || ' ' || PER.APELLIDO AS CLIENTE, PLP.NUMERO_CUOTA AS NRO_CUOTA, 
 PLP.VENCIMIENTO,  PLP.MONTO_CUOTA, TRUNC(SYSDATE) - PLP.VENCIMIENTO AS DIAS_ATRASO, 
@@ -181,3 +180,32 @@ FROM B_VENTAS VEN
 WHERE TIPO_VENTA = 'CR' 
 	AND EXTRACT(YEAR FROM VEN.FECHA) = 2018
 ORDER BY DIAS_ATRASO DESC 
+
+/*
+El Dpto. Financiero de la empresa necesita un informe de los movimientos correspondientes a
+compras y ventas efectuadas en el primer semestre del año 2018.
+El informe debe contener:
+ Fecha de la operación.
+ Concepto: Para obtener esta columna debe concatenar las expresiones y/o campos:
+ Operación: Venta o Compra de mercaderías según factura.
+ Tipo de Factura: Contado o Crédito.
+ Factura
+ Monto Débito: Si es una compra se coloca el monto de la operación, pero si es una venta
+se coloca 0.
+ Monto Crédito: Si es una venta se coloca el monto de la operación, pero si es una compra
+se coloca 0.
+Por último, se pide que ordene los registros por la fecha en forma ascendente
+ */
+SELECT FECHA, 'VENTA DE MERCADERIAS A ' || 
+CASE TIPO_VENTA 
+	WHEN 'CO' THEN 'CONTADO'
+	WHEN 'CR' THEN 'CREDITO'
+END 
+|| ' SEGUN FACTURA Nro. ' || NUMERO_FACTURA AS CONCEPTO, 
+0 AS MONTO_DEBITO, MONTO_TOTAL  AS MONTO_CREDITO
+FROM B_VENTAS
+UNION 
+SELECT FECHA, 'COMPRA DE MERCADERIAS', 
+MONTO_TOTAL AS MONTO_DEBITO, 0 AS MONTO_CREDITO
+FROM B_COMPRAS 
+ORDER BY FECHA DESC; 

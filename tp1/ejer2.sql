@@ -1,0 +1,99 @@
+=-- Crear tabla d_asiento_cabecera
+CREATE TABLE D_ASIENTO_CABECERA(
+	ID_ASIENTO NUMBER(10) PRIMARY KEY NOT NULL,
+	FECHA_ASIENTO DATE DEFAULT (sysdate) NOT NULL,
+	CONCEPTO VARCHAR2(500) NOT NULL 
+);
+
+-- Crear tabla d_cuentas_contables 
+CREATE TABLE D_CUENTAS_CONTABLES(
+	CODIGO_CTA NUMBER(7) NOT NULL,
+	NOMBRE_CTA VARCHAR2(40),
+	ID_TIPO NUMBER(4) DEFAULT 1 CHECK (ID_TIPO > 0 AND ID_TIPO < 6) NOT NULL,
+	NIVEL NUMBER(1) CHECK(NIVEL > 0 AND NIVEL < 6) NOT NULL,
+	ORDEN VARCHAR2(1) DEFAULT 'D' CHECK (ORDEN IN ('D', 'C')),
+	IMPUTABLE VARCHAR2(1) DEFAULT 'S' CHECK (IMPUTABLE IN ('S', 'N')) NOT NULL,
+	FECHA_APERTURA DATE,
+	CODIGO_CTA_PADRE NUMBER(8), 
+	CONSTRAINT PKd_cuentas_contables PRIMARY KEY (CODIGO_CTA), 
+	CONSTRAINT FKd_cuentas_contables FOREIGN KEY (CODIGO_CTA_PADRE) REFERENCES D_CUENTAS_CONTABLES(CODIGO_CTA) 
+); 
+
+-- Crear tabla d_asiento_detalle
+CREATE TABLE D_ASIENTO_DETALLE
+(
+	ID_ASIENTO NUMBER(10) NOT NULL,
+	SECUENCIA NUMBER(4) NOT NULL,	
+	CODIGO_CTA NUMBER(7) NOT NULL ,
+	DEBE_HABER VARCHAR2(20) DEFAULT 'D' CHECK (DEBE_HABER IN ('D', 'H')),
+	IMPORTE NUMBER(9) NOT NULL,
+CONSTRAINT PKd_asiento_detalle PRIMARY KEY (ID_ASIENTO, SECUENCIA),
+CONSTRAINT FKd_asiento_detalle FOREIGN KEY (CODIGO_CTA) REFERENCES D_CUENTAS_CONTABLES(CODIGO_CTA),
+CONSTRAINT FKd_asiento_detalle2 FOREIGN KEY (ID_ASIENTO) REFERENCES D_ASIENTO_CABECERA(ID_ASIENTO)
+);
+
+
+-- Crear tabla d_plantilla_asiento
+CREATE TABLE D_PLANTILLA_ASIENTO
+(
+	ID_PLANTILLA NUMBER(10) NOT NULL,
+	NOMBRE VARCHAR2(60) NOT NULL,
+	ACTIVA VARCHAR2(1) CHECK (ACTIVA IN ('N','S')) NOT NULL,
+CONSTRAINT PKd_plantilla_asiento PRIMARY KEY (ID_PLANTILLA)
+);
+
+-- Crear tabla d_plantilla_detalle
+CREATE TABLE D_PLANTILLA_DETALLE
+(
+	ID_PLANTILLA NUMBER(10) NOT NULL ,
+	SECUENCIA NUMBER(4) NOT NULL ,
+	DEBE_HABER VARCHAR2(20) CHECK (DEBE_HABER IN ('D','H')),
+	CODIGO_CTA NUMBER(7),
+	CATEGORIA VARCHAR2(20) NOT NULL,
+CONSTRAINT PKd_plantilla_detalle PRIMARY KEY (ID_PLANTILLA, SECUENCIA),
+CONSTRAINT FKd_plantilla_detalle FOREIGN KEY (ID_PLANTILLA) REFERENCES D_PLANTILLA_ASIENTO(ID_PLANTILLA), 
+CONSTRAINT FKd_plantilla_detalle2 FOREIGN KEY (CODIGO_CTA) REFERENCES D_CUENTAS_CONTABLES(CODIGO_CTA) 
+);
+
+
+--------------------------------------------------------------------------------------------------------------------------
+-- Comentarios 
+--------------------------------------------------------------------------------------------------------------------------
+COMMENT ON TABLE D_ASIENTO_CABECERA IS 'Cabecera de asientos contables';
+COMMENT ON COLUMN D_ASIENTO_CABECERA.ID_ASIENTO IS 'Fecha del asiento';
+COMMENT ON COLUMN D_ASIENTO_CABECERA.FECHA_ASIENTO IS 'Identificación del asiento ';
+COMMENT ON COLUMN D_ASIENTO_CABECERA.CONCEPTO IS 'Concepto del asiento';
+
+COMMENT ON TABLE D_ASIENTO_DETALLE IS 'Lineas de detalle del asiento contable';
+COMMENT ON COLUMN D_ASIENTO_DETALLE.SECUENCIA IS 'Secuencia del Asiento';
+COMMENT ON COLUMN D_ASIENTO_DETALLE.CODIGO_CTA IS 'Codigo de la cuenta';
+COMMENT ON COLUMN D_ASIENTO_DETALLE.DEBE_HABER IS 'Indica si el importe del asiento afecta en el DEBE ‘D’ o en el HABER ‘H’';
+COMMENT ON COLUMN D_ASIENTO_DETALLE.IMPORTE IS 'Importe del Asiento';
+
+COMMENT ON TABLE D_CUENTAS_CONTABLES IS 'Plan de Cuentas Contable. ';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.CODIGO_CTA IS 'código de la cuenta';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.NOMBRE_CTA IS 'Nombre de la cuenta';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.ID_TIPO IS 'Determina tipo: 1(Activo) 2(Pasivo) 3(Patrimonio) 4(Gastos) 5 (Ingresos)';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.NIVEL IS 'Nivel de la cuenta en la jerarquía: nivel 1: primer dígito, nivel 2: Segundo dígito, nivel 3 (tercer digito) nivel 4 (cuarto y quinto digito) nivel 5 (sexto y séptimo dígito)';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.ORDEN IS 'D: Deudor y C: Acreedor';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.IMPUTABLE IS 'Indica si una cuenta es imputable ("S") o no ("N"). Cuando es imputable, una cuenta acepta asientos contables.';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.FECHA_APERTURA IS 'Fecha de apertura de la cuenta';
+COMMENT ON COLUMN D_CUENTAS_CONTABLES.CODIGO_CTA_PADRE IS 'Código de producto, de cuenta, de cliente según el tipo de cuenta';
+
+COMMENT ON TABLE D_PLANTILLA_ASIENTO IS 'Template de Asientos contables';
+COMMENT ON COLUMN D_PLANTILLA_ASIENTO.ID_PLANTILLA IS 'Identificacion de Planilla';
+COMMENT ON COLUMN D_PLANTILLA_ASIENTO.NOMBRE IS 'Nombre de la Plantilla';
+COMMENT ON COLUMN D_PLANTILLA_ASIENTO.ACTIVA IS 'Indica si la plantilla está activa ("S") o no ("N")';
+
+COMMENT ON TABLE D_PLANTILLA_DETALLE IS 'Lineas de detalle del Template de Asientos contables';
+COMMENT ON COLUMN D_PLANTILLA_DETALLE.ID_PLANTILLA IS 'Identificación';
+COMMENT ON COLUMN D_PLANTILLA_DETALLE.SECUENCIA IS 'Secuencia del asiento ';
+COMMENT ON COLUMN D_PLANTILLA_DETALLE.DEBE_HABER IS 'Indica si el importe del asiento afecta en el DEBE ("D") o en el HABER ("H").';
+COMMENT ON COLUMN D_PLANTILLA_DETALLE.CODIGO_CTA IS 'código de la cuenta';
+COMMENT ON COLUMN D_PLANTILLA_DETALLE.CATEGORIA IS 'Categorización en la que se aplicará la dinámica contable: Ej: APERTURA, CIERRE, VENTA, COMPRA, etc';
+
+
+
+
+
+
