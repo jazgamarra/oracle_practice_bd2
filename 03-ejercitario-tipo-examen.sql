@@ -92,21 +92,21 @@ insumos.
 generado”. 
  */
 DECLARE 
-	v_id_producto EX_PRODUCCION.ID_PRODUCTO%TYPE;
+	v_id_producto EX_PRODUCCION.ID_PRODUCTO%TYPE := &v_id_producto;
 	v_cantidad_producir EX_PRODUCCION.CANTIDAD_A_PRODUCIR%TYPE := &v_cantidad_producir;
-	v_fecha_orden EX_PRODUCCION.FECHA_ORDEN%TYPE;
+	v_fecha_orden EX_PRODUCCION.FECHA_ORDEN%TYPE := &v_fecha_orden;
 	v_tipo_articulo B_ARTICULOS.TIPO_ARTICULO%TYPE; 
 	v_id_insumo EX_INSUMOS.ID_INSUMO%TYPE; 
 	v_id_produccion EX_PRODUCCION.ID_PRODUCCION%TYPE;
 BEGIN 
-	SELECT ID INTO v_id_producto FROM B_ARTICULOS WHERE ID = &v_id_producto; 
+	SELECT ID INTO v_id_producto FROM B_ARTICULOS WHERE ID = v_id_producto; 
 	SELECT TIPO_ARTICULO INTO v_tipo_articulo FROM B_ARTICULOS WHERE ID = v_id_producto; 
 	SELECT NVL(MAX(ID_PRODUCCION),0) + 1 INTO v_id_produccion FROM EX_PRODUCCION;
 	
 	-- Validar si es un producto 
 	IF v_tipo_articulo = 'P' THEN 
 		INSERT INTO EX_PRODUCCION (ID_PRODUCTO, CANTIDAD_A_PRODUCIR, FECHA_ORDEN) 
-		VALUES (v_id_producto, v_cantidad_producir, TO_DATE('&v_fecha_orden', 'DD/MM/YYYY')); 
+		VALUES (v_id_producto, v_cantidad_producir, TO_DATE(	'&v_fecha_orden', 'DD/MM/YYYY')); 
 		COMMIT; 
 		
 		INSERT INTO EX_MOV_PRODUCCION (ID_PRODUCCION, ID_INSUMO, CANTIDAD)
