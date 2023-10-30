@@ -98,12 +98,10 @@ BEGIN
 	DBMS_SQL.DEFINE_COLUMN(V_CURSOR, 1, v_cedula);
 	DBMS_SQL.DEFINE_COLUMN(V_CURSOR, 2, v_apellido, 30);
 	DBMS_SQL.DEFINE_COLUMN(V_CURSOR, 3, v_nombre, 30);
-
-
+	
 	-- ejecutar y recuperar cantidad de filas afectadas 
 	v_cantidad := DBMS_SQL.EXECUTE(v_cursor);
 
-	
 	-- imprimir en pantalla todas las filas obtenidas 
 	LOOP
         EXIT WHEN DBMS_SQL.FETCH_ROWS(V_CURSOR) = 0;
