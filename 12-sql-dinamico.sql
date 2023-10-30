@@ -59,3 +59,72 @@ BEGIN
 		EXECUTE IMMEDIATE V_SQL;
 	END LOOP;
 END; 
+
+/*
+ Cree un procedimiento que reciba por parámetros el código de un empleado que sea jefe
+(superior). El procedimiento Deberá armar un sql dinámico que recupero la Cédula, Apellido y
+Nombre de todos los empleados que dependen del jefe superior. Prever que el código de jefe sea
+variable. Si no se envía como parámetro la cédula de un jefe (si es null), devuelve todos los
+empleados. Considere que este ejercicio puede resolverlo también con un cursor estático, o con
+un cursor por referencia, pero en este caso en particular, y al solo efecto del ejercicio, utilice el
+paquete DBMS_SQL.
+ */
+-- datos a seleccionar 
+SELECT CEDULA, APELLIDO, NOMBRE FROM B_EMPLEADOS WHERE CEDULA_JEFE = 952160; 
+
+-- crear procedimiento que imprima en pantalla los empleados 
+CREATE OR REPLACE PROCEDURE P_EMPLEADOS_A_CARGO (P_CEDULA NUMBER DEFAULT NULL) IS
+	V_CURSOR NUMBER;
+	V_SENTENCIA VARCHAR2(1000);
+	v_cantidad NUMBER;
+	v_cedula NUMBER; 
+	v_apellido VARCHAR2(30); 
+	v_nombre VARCHAR2(30); 
+
+BEGIN
+	v_cursor := DBMS_SQL.OPEN_CURSOR;
+	
+	-- definir la sentencia dependiendo de si se tiene o no la cedula como parametro 
+	IF P_CEDULA IS NOT NULL THEN 
+		v_sentencia := 'SELECT CEDULA, APELLIDO, NOMBRE FROM B_EMPLEADOS WHERE CEDULA_JEFE = (:ced)'; 
+		DBMS_SQL.PARSE(v_cursor, v_sentencia, DBMS_SQL.NATIVE);
+		DBMS_SQL.BIND_VARIABLE(v_cursor, ':ced', P_CEDULA);	 
+	ELSE
+		v_sentencia := 'SELECT CEDULA, APELLIDO, NOMBRE FROM B_EMPLEADOS'; 
+		DBMS_SQL.PARSE(v_cursor, v_sentencia, DBMS_SQL.NATIVE);
+	END IF; 
+
+	-- definir las columnas 
+	DBMS_SQL.DEFINE_COLUMN(V_CURSOR, 1, v_cedula);
+	DBMS_SQL.DEFINE_COLUMN(V_CURSOR, 2, v_apellido, 30);
+	DBMS_SQL.DEFINE_COLUMN(V_CURSOR, 3, v_nombre, 30);
+
+
+	-- ejecutar y recuperar cantidad de filas afectadas 
+	v_cantidad := DBMS_SQL.EXECUTE(v_cursor);
+
+	
+	-- imprimir en pantalla todas las filas obtenidas 
+	LOOP
+        EXIT WHEN DBMS_SQL.FETCH_ROWS(V_CURSOR) = 0;
+        DBMS_SQL.COLUMN_VALUE(V_CURSOR, 1, v_cedula);
+        DBMS_SQL.COLUMN_VALUE(V_CURSOR, 2, v_apellido);
+        DBMS_SQL.COLUMN_VALUE(V_CURSOR, 3, v_nombre);
+
+        DBMS_OUTPUT.PUT_LINE(v_cedula || ' - ' || v_apellido || ', ' || v_nombre);
+    END LOOP;
+	
+	-- ejecutar y cerrar cursor 
+	DBMS_SQL.CLOSE_CURSOR(v_cursor);
+END; 
+
+-- el procedimiento se puede ejecutar asi 
+BEGIN
+	P_EMPLEADOS_A_CARGO (952160); 
+END; 
+
+-- o asi 
+BEGIN
+	P_EMPLEADOS_A_CARGO (); 
+END; 
+
