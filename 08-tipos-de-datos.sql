@@ -118,3 +118,100 @@ BEGIN
 
 END; 
 
+/*
+Desarrolle el procedimiento P_DISTRIBUIR_CLIENTES que se encargará de distribuir los clientes
+entre los empleados que son vendedores, y posteriormente muestre dicha distribución como un
+tablero:
+a) Declarar un tipo de dato registro T_REG compuesto de los campos:
+	 NOM_APE VARCHAR (200),
+	 TELEFONO VARCHAR2(15),
+	 CEDULA_JEFE VARCHAR2(15),
+	 CANT_CLIENTE NUMBER (5)
+b) Declarar una tabla indexada del tipo T_REG.
+c) Llenar la tabla con los datos de los empleados que ocupan actualmente el cargo de vendedor, no olvide
+indexar la tabla por cédula del vendedor. Para obtener el campo CANT_CLIENTE, debe calcular la
+cantidad total de clientes existentes y distribuir equitativamente dicha cantidad entre los vendedores
+existentes. SI la distribución no es exacta, la diferencia quedará en el último elemento.
+d) Por último, deberá imprimir los elementos de la tabla.
+	 El tablero debe lucir de la siguiente manera:
+	 En caso de que tengamos 3 vendedores y un total de 20 clientes
+
+*/
+-- datos de los empleados 
+SELECT EMP.NOMBRE || ' ' || EMP.APELLIDO NOMBRE, EMP.TELEFONO, EMP.CEDULA_JEFE 
+FROM B_EMPLEADOS EMP
+JOIN B_POSICION_ACTUAL PA ON PA.CEDULA = EMP.CEDULA
+JOIN B_CATEGORIAS_SALARIALES CA ON CA.COD_CATEGORIA = PA.COD_CATEGORIA 
+WHERE CA.NOMBRE_CAT LIKE 'Vendedor %';
+
+-- cantidad de clientes
+SELECT floor(count(*)/3) FROM b_personas WHERE es_cliente = 'S'; 
+SELECT count(*) FROM b_personas WHERE es_cliente = 'S'; 
+
+-- cantidad de vendedores 
+SELECT count(*)
+FROM B_EMPLEADOS EMP
+JOIN B_POSICION_ACTUAL PA ON PA.CEDULA = EMP.CEDULA
+JOIN B_CATEGORIAS_SALARIALES CA ON CA.COD_CATEGORIA = PA.COD_CATEGORIA 
+WHERE CA.NOMBRE_CAT LIKE 'Vendedor %';
+
+
+-- crear el procedimiento 
+CREATE OR REPLACE PROCEDURE P_DISTRIBUIR_CLIENTES
+IS 
+	CURSOR C_VENDEDORES IS 
+		SELECT EMP.CEDULA, EMP.NOMBRE || ' ' || EMP.APELLIDO NOMBRE, EMP.TELEFONO, EMP.CEDULA_JEFE 
+		FROM B_EMPLEADOS EMP
+		JOIN B_POSICION_ACTUAL PA ON PA.CEDULA = EMP.CEDULA
+		JOIN B_CATEGORIAS_SALARIALES CA ON CA.COD_CATEGORIA = PA.COD_CATEGORIA 
+			WHERE CA.NOMBRE_CAT LIKE 'Vendedor %';
+	TYPE T_REG IS RECORD (
+		NOM_APE VARCHAR (200),
+		TELEFONO VARCHAR2(15),
+		CEDULA_JEFE VARCHAR2(15),
+		CANT_CLIENTE NUMBER (5)
+	); 
+
+	TYPE T_VENDEDORES IS TABLE OF T_REG INDEX BY BINARY_INTEGER; 
+	TAB_VENDEDORES T_VENDEDORES; 
+	V_VENDEDORES NUMBER; 
+	V_CLIENTES NUMBER ; 
+	v_contador NUMBER := 0; 
+		
+BEGIN
+	-- calcular la cantidad total de clientes 
+	SELECT count(*) INTO V_CLIENTES FROM b_personas WHERE es_cliente = 'S'; 
+
+	-- calcular la cantidad de vendedores 
+	SELECT count(*) INTO V_VENDEDORES FROM B_EMPLEADOS EMP 
+	JOIN B_POSICION_ACTUAL PA ON PA.CEDULA = EMP.CEDULA
+	JOIN B_CATEGORIAS_SALARIALES CA ON CA.COD_CATEGORIA = PA.COD_CATEGORIA 
+	WHERE CA.NOMBRE_CAT LIKE 'Vendedor %'; 
+
+	-- llenar la tabla 
+	FOR VEND IN C_VENDEDORES LOOP
+		TAB_VENDEDORES(VEND.CEDULA).NOM_APE := VEND.NOMBRE;
+		TAB_VENDEDORES(VEND.CEDULA).TELEFONO := VEND.TELEFONO;
+		TAB_VENDEDORES(VEND.CEDULA).CEDULA_JEFE := VEND.CEDULA_JEFE ;
+		TAB_VENDEDORES(VEND.CEDULA).CANT_CLIENTE := floor(v_clientes/v_vendedores);
+	END LOOP; 
+
+	-- verificar si hay sobrantes para modificar el ultimo 
+	IF  floor(v_clientes/v_vendedores) * v_vendedores != v_vendedores THEN 
+		tab_vendedores(tab_vendedores.last).cant_cliente :=  floor(v_clientes/v_vendedores) * (v_vendedores-1) - v_vendedores; 
+	END IF; 
+
+	-- mostrar los elementos de la tabla 
+	v_contador := tab_vendedores.FIRST;
+
+	 WHILE v_contador <= TAB_VENDEDORES.LAST LOOP
+	 	 DBMS_OUTPUT.PUT_LINE('Nombre: ' || tab_vendedores(v_contador).NOM_APE); 
+	 	 DBMS_OUTPUT.PUT_LINE('Telefono: ' || tab_vendedores(v_contador).CEDULA_JEFE); 
+	 	 DBMS_OUTPUT.PUT_LINE('Cedula jefe: ' || tab_vendedores(v_contador).CEDULA_JEFE); 
+	 	 DBMS_OUTPUT.PUT_LINE('Cantidad de clientes: ' || tab_vendedores(v_contador).CANT_CLIENTE); 
+	 	 DBMS_OUTPUT.PUT_LINE(' '); 
+	 	 v_contador := tab_vendedores.NEXT(v_contador);
+
+	 END LOOP;
+END; 
+

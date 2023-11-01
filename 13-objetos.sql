@@ -179,7 +179,7 @@ BEGIN
  		FROM TAB_CLIENTES c
  		WHERE c.CLIENTE.CEDULA_RUC = P_CEDULA; 
  	EXCEPTION 
-		WHEN NO_DATA_FOUND THEN
+		WHEN _FOUND THEN
 			RAISE_APPLICATION_ERROR (-20002, '(!!!) No se encontro un cliente con esa cedula'); 
 	END; 
 
