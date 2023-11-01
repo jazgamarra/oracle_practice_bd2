@@ -29,7 +29,6 @@ CREATE OR REPLACE TYPE T_CLIENTE AS OBJECT (
 	ORDER MEMBER FUNCTION orden_cli (cli1 T_CLIENTE) RETURN NUMBER
 );
 
-
 -- crear el cuerpo del objeto 
 CREATE OR REPLACE TYPE BODY T_CLIENTE AS
 
@@ -69,7 +68,6 @@ CREATE OR REPLACE TYPE BODY T_CLIENTE AS
 		    RETURN CLIENTE_RESULTADO;
 		END;
 
-	 
 	 -- funcion order 
 	  ORDER MEMBER FUNCTION orden_cli(cli1 T_CLIENTE) RETURN NUMBER IS
 	  BEGIN
@@ -197,5 +195,3 @@ END;
 
 -- verificar la tabla ventas 
 SELECT * FROM ventas; 
-
-
