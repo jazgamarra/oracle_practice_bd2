@@ -114,3 +114,69 @@ BEGIN
 			RAISE_APPLICATION_ERROR (-20003, '(!!!) No eliminar asignaciones.'); 
 	END IF; 
 END; 
+
+/*
+4. En la tabla B_CUENTAS debe controlar que una cuenta NO pueda ser padre de otra cuenta si ya es
+imputable (IMPUTABLE = ‘S’). Del mismo modo, cuenta NO puede volverse imputable si ya tiene hijos.
+Codifique el trigger de manera a evitar que se produzca el error de tabla mutante
+*/
+
+-- crear un paquetote para guardar los datos 
+	CREATE OR REPLACE PACKAGE PACK_CTAS
+	IS
+		TYPE T_CTA IS RECORD (
+			
+			CODIGO_CTA NUMBER, 
+			IMPUTABLE VARCHAR2(1), 
+			CANT_HIJOS NUMBER
+		);
+		TYPE T_CUENTAS IS TABLE OF T_CTA INDEX BY BINARY_INTEGER;
+		T_CTAS T_CUENTAS;
+	END;
+
+-- trigger a nivel de sentencia para guardar los datos 
+	CREATE OR REPLACE TRIGGER T_VERIF_CUENTAS 
+		BEFORE UPDATE OR INSERT ON B_CUENTAS 
+	DECLARE 
+		CURSOR C_CUENTAS IS 
+			SELECT C.CODIGO_CTA, C.IMPUTABLE, (SELECT COUNT(CU.CODIGO_CTA) FROM B_CUENTAS CU WHERE CU.CTA_SUPERIOR = C.CODIGO_CTA) CANT_HIJOS
+			FROM B_CUENTAS C; 
+		 v_contador NUMBER;
+	BEGIN	
+		-- vaciar la variable de paquete 
+		PACK_CTAS.T_CTAS.DELETE;
+		
+		-- guardar datos en el paquete 
+		FOR REG IN C_CUENTAS LOOP
+			PACK_CTAS.T_CTAS(REG.CODIGO_CTA).CODIGO_CTA := REG.CODIGO_CTA;
+			PACK_CTAS.T_CTAS(REG.CODIGO_CTA).IMPUTABLE := REG.IMPUTABLE;
+			PACK_CTAS.T_CTAS(REG.CODIGO_CTA).CANT_HIJOS := REG.CANT_HIJOS;
+	
+		END LOOP;
+		
+	 	-- imprimir datos del paquete
+		 v_contador := PACK_CTAS.T_CTAS.FIRST;
+		 WHILE v_contador <= PACK_CTAS.T_CTAS.LAST LOOP
+		 	 DBMS_OUTPUT.PUT_LINE('Nombre: ' || PACK_CTAS.T_CTAS(v_contador).CODIGO_CTA); 
+		 	 DBMS_OUTPUT.PUT_LINE('Telefono: ' || PACK_CTAS.T_CTAS(v_contador).IMPUTABLE); 
+		 	 DBMS_OUTPUT.PUT_LINE('Cedula jefe: ' || PACK_CTAS.T_CTAS(v_contador).CANT_HIJOS); 
+		 	 DBMS_OUTPUT.PUT_LINE(' '); 
+		 	 v_contador :=  PACK_CTAS.T_CTAS.NEXT(v_contador);
+		 END LOOP;
+	END; 
+
+-- trigger a nivel de fila 
+CREATE OR REPLACE TRIGGER T_VALIDAR_CUENTAS 
+	AFTER UPDATE OR INSERT ON B_CUENTAS 
+	FOR EACH ROW
+BEGIN
+	
+	IF :NEW.IMPUTABLE = 'S' AND PACK_CTAS.T_CTAS(:NEW.CODIGO_CTA).CANT_HIJOS != 0 THEN 
+		RAISE_APPLICATION_ERROR (-20001, '(!!!) No puede asignar el valor imputable a una cuenta con hijos. '); 
+	END IF; 
+
+	IF PACK_CTAS.T_CTAS(:NEW.CTA_SUPERIOR).IMPUTABLE = 'S' THEN 
+		RAISE_APPLICATION_ERROR (-20002, '(!!!) No puede asignar como cuenta superior a una cuenta imputable.  '); 
+	END IF; 
+	
+END; 
