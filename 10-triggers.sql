@@ -116,7 +116,7 @@ BEGIN
 END; 
 
 /*
-4. En la tabla B_CUENTAS debe controlar que una cuenta NO pueda ser padre de otra cuenta si ya es
+En la tabla B_CUENTAS debe controlar que una cuenta NO pueda ser padre de otra cuenta si ya es
 imputable (IMPUTABLE = ‘S’). Del mismo modo, cuenta NO puede volverse imputable si ya tiene hijos.
 Codifique el trigger de manera a evitar que se produzca el error de tabla mutante
 */
