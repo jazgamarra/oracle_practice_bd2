@@ -1,5 +1,5 @@
 /*  
-Cree en la BD el tipo T_CLIENTE que tiene los siguientes elementos:
+1. Cree en la BD el tipo T_CLIENTE que tiene los siguientes elementos:
 Los atributos
 	CEDULA-RUC VARCHAR2(15),
 	NOMBRE VARCHAR2(40),
@@ -99,7 +99,7 @@ END;
 	END;
 
 /*
-Cree la tabla TAB_CLIENTE conformada por objetos de tipo T_CLIENTE.
+2. Cree la tabla TAB_CLIENTE conformada por objetos de tipo T_CLIENTE.
 Desarrolle un PL/SQL anónimo que deberá leer los clientes (personas clientes) secuencialmente, y los
 inserte en la tabla TAB_CLIENTE (recuerde usar el método estático para asignar clientes).
 Leer nuevamente la tabla e imprimir los datos:
@@ -137,7 +137,7 @@ END;
 SELECT * FROM TAB_CLIENTES; 
 
 /*
- Cree la tabla VENTAS con una de las columnas conformada por objetos T_CLIENTE de la siguiente manera:
+3. Cree la tabla VENTAS con una de las columnas conformada por objetos T_CLIENTE de la siguiente manera:
 	ID_ARTICULO NUMBER(8),
 	 CANTIDAD NUMBER(9),
 	 MONTO NUMBER(9),
@@ -195,3 +195,63 @@ END;
 
 -- verificar la tabla ventas 
 SELECT * FROM ventas; 
+
+/*
+Cree el tipo T_DEUDORES con los siguientes elementos:
+	ID_CLIENTE
+	NOMBRE (Nombre y apellido)
+	DEUDA_TOTAL
+	DEUDA_VENCIDA
+Y los siguientes métodos:
+	 Un método estático denominado OBTENER_CLIENTE que reciba como parámetro una cédula o
+	RUC del cliente y devuelva un objeto del tipo T_DEUDORES que tenga asignado el ID del
+	cliente y el nombre (nombre concatenado con apellido)
+	 El método miembro OBTENER_DEUDA que asigna el atributo DEUDA_TOTAL con la suma
+	del monto de todas las cuotas de ventas a crédito pendientes de pago, y el atributo
+	DEUDA_VENCIDA con la suma de todas las cuotas ya vencidas pendientes de pago.
+	 Un método MAP que ordene por ID del cliente
+*/
+
+CREATE OR REPLACE TYPE T_DEUDORES AS OBJECT (
+	ID_CLIENTE NUMBER,
+	NOMBRE VARCHAR2(50), 
+	DEUDA_TOTAL NUMBER,
+	DEUDA_VENCIDA NUMBER, 
+	STATIC FUNCTION OBTENER_CLIENTE (CEDULA_RUC IN VARCHAR2) RETURN T_DEUDORES, 
+	MEMBER PROCEDURE OBTENER_DEUDA
+); 
+
+
+CREATE OR REPLACE TYPE BODY T_DEUDORES AS 
+	STATIC FUNCTION OBTENER_CLIENTE (CEDULA_RUC IN VARCHAR2) RETURN T_DEUDORES IS 	
+		V_CLIENTE T_DEUDORES := T_DEUDORES(0, '', 0, 0); 
+		ES_CEDULA BOOLEAN := false;
+	BEGIN 	
+		-- Verificar si CEDULA_RUC es una cédula o un RUC
+	    IF REGEXP_LIKE(CEDULA_RUC, '^\d+$') THEN
+	        ES_CEDULA := true;
+	    END IF;
+	
+	    -- Consulta basada en el tipo de identificación
+	    IF ES_CEDULA THEN
+	    	SELECT id, nombre || ' ' || apellido 
+	    	INTO v_cliente.id_cliente, v_cliente.nombre
+	    	FROM B_PERSONAS WHERE cedula = cedula_ruc;     
+	    ELSE
+	        SELECT id, nombre || ' ' || apellido 
+	    	INTO v_cliente.id_cliente, v_cliente.nombre
+	    	FROM B_PERSONAS WHERE ruc = cedula_ruc;  
+	    END IF;
+	END; 
+
+	MEMBER PROCEDURE OBTENER_DEUDA IS
+	BEGIN 
+		SELECT
+		  SUM(CASE WHEN PPA.FECHA_PAGO IS NULL THEN PPA.MONTO_CUOTA ELSE 0 END) DEUDA_TOTAL, 
+		  SUM(CASE WHEN PPA.FECHA_PAGO IS NULL AND PPA.VENCIMIENTO < SYSDATE THEN PPA.MONTO_CUOTA ELSE 0 END) DEUDA_VENCIDA 
+		INTO SELF.DEUDA_TOTAL, SELF.DEUDA_VENCIDA
+		FROM B_PLAN_PAGO PPA
+		JOIN B_VENTAS VEN ON VEN.ID = PPA.ID_VENTA
+		WHERE VEN.ID = SELF.ID_CLIENTE; 
+	END;  
+END; 

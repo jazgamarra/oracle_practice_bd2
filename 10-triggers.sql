@@ -156,7 +156,7 @@ Codifique el trigger de manera a evitar que se produzca el error de tabla mutant
 		
 	 	-- imprimir datos del paquete
 		 v_contador := PACK_CTAS.T_CTAS.FIRST;
-		 WHILE v_contador <= PACK_CTAS.T_CTAS.LAST LOOP
+		WHILE  v_contador <= PACK_CTAS.T_CTAS.LAST LOOP
 		 	 DBMS_OUTPUT.PUT_LINE('Nombre: ' || PACK_CTAS.T_CTAS(v_contador).CODIGO_CTA); 
 		 	 DBMS_OUTPUT.PUT_LINE('Telefono: ' || PACK_CTAS.T_CTAS(v_contador).IMPUTABLE); 
 		 	 DBMS_OUTPUT.PUT_LINE('Cedula jefe: ' || PACK_CTAS.T_CTAS(v_contador).CANT_HIJOS); 
